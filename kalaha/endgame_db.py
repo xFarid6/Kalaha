@@ -34,7 +34,7 @@ class EndgameDB:
                     "max_seeds": self.max_seeds,
                     "positions": self.db
                 }
-                json.dump(data, f)
+                json.dump(data, f, indent=4)
             print(f"Saved {len(self.db)} positions to {DB_FILE}.")
         except Exception as e:
             print(f"Error saving {DB_FILE}: {e}")
