@@ -8,7 +8,7 @@ from sb3_contrib import MaskablePPO # type: ignore
 
 from kalaha.gui.constants import (
     BG_COLOR, TEXT_COLOR, ACCENT_COLOR, BUTTON_COLOR, BUTTON_HOVER,
-    BORDER_BOARD, BORDER_STORE
+    BORDER_BOARD, BORDER_STORE, ScreenState
 )
 
 # Imports with fallback or absolute paths
@@ -50,7 +50,7 @@ class GameScreen:
         self.rl_model: Optional[MaskablePPO] = None
         
         # State
-        self.state: str = "IDLE" # IDLE, THINKING, ANIMATING
+        self.state: ScreenState = ScreenState.IDLE # IDLE, THINKING, ANIMATING, UNDO_ANIMATING
         self.anim_queue: List[int] = [] # List of pit indices to highlight
         self.anim_timer: float = 0
         self.anim_current_idx: Optional[int] = None

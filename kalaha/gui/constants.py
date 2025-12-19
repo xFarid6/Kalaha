@@ -13,11 +13,22 @@ BORDER_BOARD = (80, 50, 20)     # Lighter brown for board area
 BORDER_STORE = (90, 60, 30)     # Distinct color for stores
 
 # Constants - Responsive Design
-# Base Logic Resolution: 1024x768 (Initial, but resizable)
-# We will use relative calculations mostly.
 WIDTH, HEIGHT = 1024, 768
 
-class GameState(Enum):
+# Application States
+class AppState(Enum):
+    """Top-level application states"""
     TITLE = auto()
     HOME = auto()
     GAME = auto()
+
+# Game Screen States
+class ScreenState(Enum):
+    """Game screen internal states"""
+    IDLE = auto()
+    THINKING = auto()
+    ANIMATING = auto()
+    UNDO_ANIMATING = auto()
+
+# Backwards compatibility
+GameState = AppState
