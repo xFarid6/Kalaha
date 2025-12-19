@@ -1,6 +1,7 @@
 import os
 import sys
 import gymnasium as gym
+import torch
 import numpy as np
 from typing import Optional, Callable
 from sb3_contrib import MaskablePPO # type: ignore
@@ -15,18 +16,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 try:
     from kalaha.training.kalaha_env import KalahaEnv
 except ImportError:
-    # Use generic import if local resolution fails, assuming package structure
     pass
 
 # Parameters - V1 (High Performance)
-# Increased total training time for better convergence
 TIMESTEPS_PER_ITERATION: int = 50_000
 TOTAL_ITERATIONS: int = 40  # 2,000,000 steps
 MODEL_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models'))
 LOG_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'logs'))
 
 def make_env() -> gym.Env:
-    # Local import to avoid top-level failures if package not perfectly set
     from kalaha.training.kalaha_env import KalahaEnv
     env = KalahaEnv()
     env = ActionMasker(env, lambda e: e.action_masks())
@@ -37,7 +35,15 @@ def train() -> None:
     os.makedirs(MODEL_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
     
-    print("Initializing Kalaha Training V1 (High Accuracy)...")
+    # GPU Detection
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Initializing Kalaha Training V1 (High Accuracy) on {device}...")
+    
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"CUDA Version: {torch.version.cuda}")
+    else:
+        print("WARNING: CUDA not available, training on CPU (slower)")
     
     env: gym.Env = make_env()
     
@@ -54,22 +60,23 @@ def train() -> None:
     
     if os.path.exists(model_path):
         print(f"Loading existing V1 model from {model_path} to continue training...")
-        model = MaskablePPO.load(model_path, env=env)
+        model = MaskablePPO.load(model_path, env=env, device=device)
     else:
         print("Creating new PPO V1 model (Deep Network, Optimized Hyperparams)")
         model = MaskablePPO(
             MaskableActorCriticPolicy,
             env,
             verbose=1,
-            learning_rate=1e-4,          # Slower, more precise
-            n_steps=4096,                # Collect more experience before update
-            batch_size=256,              # Larger batch for stable gradients
-            n_epochs=10,                 # Train more on each batch
-            gamma=0.995,                 # Focus on long-term victory
+            learning_rate=1e-4,
+            n_steps=4096,
+            batch_size=256,
+            n_epochs=10,
+            gamma=0.995,
             gae_lambda=0.98,
-            ent_coef=0.01,               # Encourage exploration
+            ent_coef=0.01,
             policy_kwargs=policy_kwargs,
-            tensorboard_log=LOG_DIR
+            tensorboard_log=LOG_DIR,
+            device=device  # GPU support
         )
         
     # Callbacks
@@ -89,13 +96,9 @@ def train() -> None:
             reset_num_timesteps=False # CRITICAL for incremental training
         )
         
-        # Save "latest" and "best" (conceptually)
+        # Save models
         model.save(os.path.join(MODEL_DIR, "kalaha_v1_latest"))
-        
-        # Overwrite the unified 'kalaha_latest' for the GUI
         model.save(os.path.join(MODEL_DIR, "kalaha_latest")) 
-        
-        # Also save the specific v1 checkpoint
         model.save(os.path.join(MODEL_DIR, model_name))
 
         print(f"Iteration {i+1} complete. Model saved.")

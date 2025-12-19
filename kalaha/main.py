@@ -76,6 +76,8 @@ def main():
     print("2. Human (P1) vs Bot (P2)")
     print("3. Bot (P1) vs Human (P2)")
     print("4. Bot (P1) vs Bot (P2) (Simulation)")
+    print("5. Human vs RL Agent (PPO)")
+    print("6. RL Agent vs Bot (Simulation)")
     
     mode_input = input("Select mode: ")
     mode = 'HvH'
@@ -85,6 +87,10 @@ def main():
         mode = 'BvH'
     elif mode_input == '4':
         mode = 'BvB'
+    elif mode_input == '5':
+        mode = 'HvA'  # Human vs Agent
+    elif mode_input == '6':
+        mode = 'AvB'  # Agent vs Bot
         
     # Configuration
     bot_depth = 6
@@ -120,27 +126,84 @@ def main():
         move = -1
         
         is_bot = False
+        is_agent = False
+        
         if mode == 'BvB':
             is_bot = True
+        elif mode in ['AvB', 'HvA']:
+            # Check if current player is RL agent
+            if (mode == 'HvA' and current_player == 1) or (mode == 'AvB' and current_player == 0):
+                is_agent = True
+            elif mode == 'AvB' and current_player == 1:
+                is_bot = True
         elif (mode == 'HvB' and current_player == 1) or \
              (mode == 'BvH' and current_player == 0):
             is_bot = True
             
-        print(f"Turn: Player {current_player + 1} ({'Bot' if is_bot else 'Human'})")
-        
+        player_type = 'Human'
         if is_bot:
+            player_type = 'Bot'
+        elif is_agent:
+            player_type = 'RL Agent'
+            
+        print(f"Turn: Player {current_player + 1} ({player_type})")
+        
+        if is_agent:
+            # RL Agent move
+            print("RL Agent is thinking...")
+            try:
+                from kalaha.gui.game_screen import GameScreen
+                # Use the same RL logic as GUI
+                # Create a minimal object to use get_rl_move
+                import numpy as np
+                from sb3_contrib import MaskablePPO
+                import os
+                
+                model_path = os.path.join("models", "kalaha_latest.zip")
+                if not os.path.exists(model_path):
+                    model_path = os.path.join("..", "models", "kalaha_latest.zip")
+                    
+                if os.path.exists(model_path):
+                    model = MaskablePPO.load(model_path)
+                    
+                    obs = np.zeros(15, dtype=np.int32)
+                    if current_player == 0:
+                        obs[0:6] = board[0:6]; obs[6] = board[6]; obs[7:13] = board[7:13]; obs[13] = board[13]; obs[14] = 0
+                    else:
+                        obs[0:6] = board[7:13]; obs[6] = board[13]; obs[7:13] = board[0:6]; obs[13] = board[6]; obs[14] = 1
+                    
+                    mask = [False]*6
+                    pits = list(range(0,6)) if current_player == 0 else list(range(7,13))
+                    for i, p in enumerate(pits):
+                        if board[p] > 0: mask[i] = True
+                        
+                    action, _ = model.predict(obs, action_masks=mask, deterministic=True)
+                    move = int(action) if current_player == 0 else int(action + 7)
+                    
+                    rel_move = move + 1 if current_player == 0 else move - 7 + 1
+                    print(f"RL Agent chose pit: {rel_move} (Index {move})")
+                else:
+                    print("RL model not found! Falling back to random move.")
+                    valid = legal_moves(board, current_player)
+                    move = valid[0] if valid else None
+            except Exception as e:
+                print(f"RL Agent error: {e}. Falling back to random move.")
+                valid = legal_moves(board, current_player)
+                move = valid[0] if valid else None
+                
+        elif is_bot:
             print(f"Bot (Strategy: {bot_strategy}, Depth: {bot_depth}) is thinking...")
             
             if mode == 'BvB':
                 time.sleep(sim_delay)
                 
-            move = get_best_move(board, current_player, depth=bot_depth, strategy=bot_strategy)
+            move, nodes = get_best_move(board, current_player, depth=bot_depth, strategy=bot_strategy)
             if move is None:
                 print("Bot has no legal moves!")
                 break
             # Display relative move for readability
             rel_move = move + 1 if current_player == 0 else move - 7 + 1
-            print(f"Bot chose pit: {rel_move} (Index {move})")
+            print(f"Bot chose pit: {rel_move} (Index {move}) [Analyzed {nodes} nodes]")
         else:
             move = get_human_move(board, current_player)
             

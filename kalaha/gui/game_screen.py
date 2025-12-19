@@ -60,6 +60,13 @@ class GameScreen:
         self.total_nodes_analyzed: int = 0
         self.bot_choices: List[int] = [] # Track all bot choices
         
+        # Game history for UNDO feature (hash-based to save memory)
+        self.game_history: List[Dict[str, Any]] = []
+        
+        # UNDO feature: store hashes + minimal data
+        self.undo_history: List[Dict[str, Any]] = []
+        self.MAX_UNDOS: int = 20
+        
         self.bot_thinking_start: float = 0
         self.board: List[int] = []
         self.current_player: int = 0
@@ -84,6 +91,57 @@ class GameScreen:
         self.last_move_nodes = 0
         self.total_nodes_analyzed = 0
         self.bot_choices = []
+        
+        # Initialize game history with starting state
+        self.game_history = [{
+            'board': self.board.copy(),
+            'current_player': self.current_player,
+            'move_that_led_here': None,
+            'timestamp': time.time()
+        }]
+        
+        # Initialize undo history with starting state (hash-based)
+        self.undo_history = [{
+            'board_hash': hash(tuple(self.board)),
+            'board': self.board.copy(),  # Keep for reconstruction
+            'current_player': self.current_player,
+            'move_that_led_here': None
+        }]
+        
+    def undo_move(self) -> bool:
+        """Undo the last move. Returns True if successful."""
+        if len(self.undo_history) <= 1:  # Only initial state
+            return False
+            
+        if self.state != "IDLE":  # Safety check
+            return False
+            
+        # Reverse animation
+        if len(self.undo_history) >= 2:
+            prev_state = self.undo_history[-2]
+            current_state = self.undo_history[-1]
+            move = current_state['move_that_led_here']
+            
+            if move is not None:
+                # Calculate reverse path
+                path = self.game_logic['get_path'](prev_state['board'], move, prev_state['current_player'])
+                self.anim_queue = list(reversed(path))
+                self.state = "UNDO_ANIMATING"
+                self.anim_timer = time.time()
+        
+        # Pop current state
+        self.undo_history.pop()
+        
+        # Restore previous
+        prev_state = self.undo_history[-1]
+        self.board = prev_state['board'].copy()
+        self.current_player = prev_state['current_player']
+        
+        # Also update game_history for consistency
+        if len(self.game_history) > 1:
+            self.game_history.pop()
+        
+        return True
         
     def load_rl_model(self) -> Optional[MaskablePPO]:
         if self.rl_model: return self.rl_model
@@ -129,7 +187,7 @@ class GameScreen:
     def update(self, events: List[pygame.event.Event]) -> None:
         current_time = time.time()
         
-        # Handle Animation
+        # Handle Animation (normal forward)
         if self.state == "ANIMATING":
             if not self.anim_queue:
                 # Animation Done, Apply Logic
@@ -143,6 +201,19 @@ class GameScreen:
                     self.anim_current_idx = self.anim_queue.pop(0)
                     self.anim_timer = current_time
             return # Block interaction during animation
+        
+        # Handle UNDO Animation (backwards)
+        if self.state == "UNDO_ANIMATING":
+            if not self.anim_queue:
+                # UNDO animation complete
+                self.state = "IDLE"
+                self.anim_current_idx = None
+            else:
+                sow_delay = self.config.get('anim_speed', 0.5) * 0.7  # Slightly faster for undo
+                if current_time - self.anim_timer > sow_delay:
+                    self.anim_current_idx = self.anim_queue.pop(0)
+                    self.anim_timer = current_time
+            return
 
         # Handle Bot Thinking Delay
         if self.state == "THINKING":
@@ -159,6 +230,11 @@ class GameScreen:
                     if self.buttons.get("reset", pygame.Rect(0,0,0,0)).collidepoint(pos):
                         self.on_exit()
                 else:
+                    # Check UNDO button
+                    if self.buttons.get("undo", pygame.Rect(0,0,0,0)).collidepoint(pos):
+                        if self.undo_move():
+                            print("Move undone!")
+                    
                     if self.current_player == 0 or not self.is_bot:
                         # Only allow legal moves
                         moves = self.game_logic['legal'](self.board, self.current_player)
@@ -195,6 +271,26 @@ class GameScreen:
         self.board, extra = self.game_logic['apply'](self.board, idx, self.current_player)
         if not extra:
             self.current_player = 1 - self.current_player
+        
+        # Record state in history
+        self.game_history.append({
+            'board': self.board.copy(),
+            'current_player': self.current_player,
+            'move_that_led_here': idx,
+            'timestamp': time.time()
+        })
+        
+        # Record state in undo history (hash-based)
+        self.undo_history.append({
+            'board_hash': hash(tuple(self.board)),
+            'board': self.board.copy(),
+            'current_player': self.current_player,
+            'move_that_led_here': idx
+        })
+        
+        # Limit undo history to MAX_UNDOS
+        if len(self.undo_history) > self.MAX_UNDOS + 1:  # +1 for initial state
+            self.undo_history.pop(0)
         
         if self.game_logic['terminal'](self.board):
             self.board = self.game_logic['cleanup'](self.board)
@@ -347,7 +443,21 @@ class GameScreen:
         self.draw_text(str(self.board[6]), self.font_med, TEXT_COLOR, center=p1_store_rect.center)
         
         # === BOTTOM BAR (Controls) ===
-        # Currently empty or just copyright/padding
+        # UNDO Button
+        if not self.game_over and len(self.undo_history) > 1:
+            undo_w, undo_h = 180, 50
+            undo_x = 30
+            undo_y = H - bottom_bar_h + 25
+            undo_rect = pygame.Rect(undo_x, undo_y, undo_w, undo_h)
+            
+            is_active = undo_rect.collidepoint(pygame.mouse.get_pos()) and self.state == "IDLE"
+            self.draw_button(f"← UNDO ({len(self.undo_history)-1})", undo_rect, active=is_active)
+            self.buttons["undo"] = undo_rect
+            
+            # Show undo count
+            undos_available = min(len(self.undo_history) - 1, self.MAX_UNDOS)
+            self.draw_text(f"{undos_available}/{self.MAX_UNDOS} undos", self.font_small, (150,150,150), 
+                          top_left=(undo_x, undo_y + undo_h + 5))
         
         # === OVERLAYS ===
         if self.game_over:
