@@ -1,46 +1,40 @@
 import os
 import sys
 import gymnasium as gym
-from sb3_contrib import MaskablePPO
-from sb3_contrib.common.wrappers import ActionMasker
-from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
-from stable_baselines3.common.callbacks import CheckpointCallback
-from stable_baselines3.common.monitor import Monitor
+from typing import Optional
+from sb3_contrib import MaskablePPO # type: ignore
+from sb3_contrib.common.wrappers import ActionMasker # type: ignore
+from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy # type: ignore
+from stable_baselines3.common.callbacks import CheckpointCallback # type: ignore
+from stable_baselines3.common.monitor import Monitor # type: ignore
 
-# Ensure we can import the env
-# We are in kalaha/ai_training, so root is ../..
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-try:
-    from kalaha.training.kalaha_env import KalahaEnv
-except ImportError:
-    # Fallback if run from root
-    from kalaha.training.kalaha_env import KalahaEnv
-
 # Parameters
-TIMESTEPS_PER_ITERATION = 50_000
-TOTAL_ITERATIONS = 10  # Total 500k steps
-MODEL_DIR = os.path.join("..", "models") # Relative to this script? No, let's make it absolute or relative to root
-# Best to use absolute from root
-MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models'))
-LOG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'logs'))
+TIMESTEPS_PER_ITERATION: int = 50_000
+TOTAL_ITERATIONS: int = 10 
+MODEL_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models'))
+LOG_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'logs'))
 
-def make_env():
+def make_env() -> gym.Env:
+    from kalaha.training.kalaha_env import KalahaEnv
     env = KalahaEnv()
     env = ActionMasker(env, lambda e: e.action_masks())
     env = Monitor(env, LOG_DIR)
     return env
 
-def train():
+def train() -> None:
     os.makedirs(MODEL_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
     
     print("Initializing Full Kalaha Training (v0)...")
     
-    env = make_env()
+    env: gym.Env = make_env()
     
     # Initialize Agent
-    model_path = os.path.join(MODEL_DIR, "kalaha_latest.zip")
+    model_path: str = os.path.join(MODEL_DIR, "kalaha_latest.zip")
+    
+    model: MaskablePPO
     
     if os.path.exists(model_path):
         print(f"Loading existing model from {model_path}")

@@ -1,28 +1,35 @@
 import pygame
 import sys
 import os
+import time
 import numpy as np
-from sb3_contrib import MaskablePPO
+from typing import List, Tuple, Dict, Any, Optional
+from sb3_contrib import MaskablePPO # type: ignore
 
 from kalaha.gui.constants import (
     BG_COLOR, TEXT_COLOR, ACCENT_COLOR, BUTTON_COLOR, BUTTON_HOVER,
-    WIDTH, HEIGHT
+    BORDER_BOARD, BORDER_STORE
 )
 
 # Imports with fallback or absolute paths
 try:
-    from kalaha.game_logic import initial_state, legal_moves, apply_move, is_terminal, cleanup_board
+    from kalaha.game_logic import (
+        initial_state, legal_moves, apply_move, is_terminal, cleanup_board, 
+        get_sowing_path
+    )
     from kalaha.ai_engine import get_best_move
     from kalaha.endgame_db import endgame_db
 except ImportError:
-    # Fallback if run directly or path issues, though we aim for package structure
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-    from kalaha.game_logic import initial_state, legal_moves, apply_move, is_terminal, cleanup_board
+    from kalaha.game_logic import (
+        initial_state, legal_moves, apply_move, is_terminal, cleanup_board, 
+        get_sowing_path
+    )
     from kalaha.ai_engine import get_best_move
     from kalaha.endgame_db import endgame_db
 
 class GameScreen:
-    def __init__(self, screen, font_med, font_small, config, on_exit):
+    def __init__(self, screen: pygame.Surface, font_med: pygame.font.Font, font_small: pygame.font.Font, config: Dict[str, Any], on_exit: Any) -> None:
         self.screen = screen
         self.font_med = font_med
         self.font_small = font_small
@@ -36,13 +43,35 @@ class GameScreen:
             'terminal': is_terminal, 
             'cleanup': cleanup_board,
             'ai': get_best_move,
-            'db': endgame_db
+            'db': endgame_db,
+            'get_path': get_sowing_path
         }
 
-        self.rl_model = None
+        self.rl_model: Optional[MaskablePPO] = None
+        
+        # State
+        self.state: str = "IDLE" # IDLE, THINKING, ANIMATING
+        self.anim_queue: List[int] = [] # List of pit indices to highlight
+        self.anim_timer: float = 0
+        self.anim_current_idx: Optional[int] = None
+        self.anim_move_idx: int = -1
+        
+        self.last_move_nodes: int = 0
+        self.total_nodes_analyzed: int = 0
+        self.bot_choices: List[int] = [] # Track all bot choices
+        
+        self.bot_thinking_start: float = 0
+        self.board: List[int] = []
+        self.current_player: int = 0
+        self.game_over: bool = False
+        self.winner: int = -1
+        self.is_bot: bool = True
+        self.pit_rects: List[Tuple[pygame.Rect, int]] = []
+        self.buttons: Dict[str, pygame.Rect] = {}
+        
         self.reset_game()
 
-    def reset_game(self):
+    def reset_game(self) -> None:
         self.board = self.game_logic['initial_state']()
         self.current_player = 0
         self.game_over = False
@@ -50,32 +79,32 @@ class GameScreen:
         self.is_bot = True # Default P2=Bot
         self.pit_rects = []
         self.buttons = {}
+        self.state = "IDLE"
+        self.anim_queue = []
+        self.last_move_nodes = 0
+        self.total_nodes_analyzed = 0
+        self.bot_choices = []
         
-    def load_rl_model(self):
+    def load_rl_model(self) -> Optional[MaskablePPO]:
         if self.rl_model: return self.rl_model
         try:
-            # We look for models in the root models/ directory
-            # Assuming CWD is root of project
             model_path = os.path.join("models", "kalaha_latest.zip")
             if not os.path.exists(model_path):
-                 # Try going up one level if we are in kalaha/ subdir
                  model_path = os.path.join("..", "models", "kalaha_latest.zip")
                  
             if os.path.exists(model_path):
                 self.rl_model = MaskablePPO.load(model_path)
-                print("RL Model loaded.")
                 return self.rl_model
         except Exception as e:
             print(f"Failed to load RL model: {e}")
             pass
         return None
 
-    def get_rl_move(self, board, player):
+    def get_rl_move(self, board: List[int], player: int) -> Optional[int]:
         model = self.load_rl_model()
         if not model: return None
         
         obs = np.zeros(15, dtype=np.int32)
-        # Canonical logic
         if player == 0:
             obs[0:6] = board[0:6]; obs[6] = board[6]; obs[7:13] = board[7:13]; obs[13] = board[13]; obs[14] = 0
         else:
@@ -89,34 +118,80 @@ class GameScreen:
         action, _ = model.predict(obs, action_masks=mask, deterministic=True)
         return int(action) if player == 0 else int(action + 7)
 
-    def update(self, events):
+    def trigger_move(self, idx: int) -> None:
+        # Calculate animation path
+        path = self.game_logic['get_path'](self.board, idx, self.current_player)
+        self.anim_queue = path
+        self.state = "ANIMATING"
+        self.anim_timer = time.time()
+        self.anim_move_idx = idx
+
+    def update(self, events: List[pygame.event.Event]) -> None:
+        current_time = time.time()
+        
+        # Handle Animation
+        if self.state == "ANIMATING":
+            if not self.anim_queue:
+                # Animation Done, Apply Logic
+                self._apply_move_logic(self.anim_move_idx)
+                self.state = "IDLE"
+                self.anim_current_idx = None
+            else:
+                sow_delay = self.config.get('anim_speed', 0.5)
+                # If time passed, pop next
+                if current_time - self.anim_timer > sow_delay:
+                    self.anim_current_idx = self.anim_queue.pop(0)
+                    self.anim_timer = current_time
+            return # Block interaction during animation
+
+        # Handle Bot Thinking Delay
+        if self.state == "THINKING":
+            # Add artificial delay 0.5s + computation
+            if current_time - self.bot_thinking_start > 0.5:
+                self.execute_bot_move()
+            return
+
+        # Handle Input
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = event.pos
                 if self.game_over:
                     if self.buttons.get("reset", pygame.Rect(0,0,0,0)).collidepoint(pos):
-                        self.on_exit() # Calls goto_home
+                        self.on_exit()
                 else:
                     if self.current_player == 0 or not self.is_bot:
+                        # Only allow legal moves
+                        moves = self.game_logic['legal'](self.board, self.current_player)
                         for rect, idx in self.pit_rects:
                             if rect.collidepoint(pos):
-                                moves = self.game_logic['legal'](self.board, self.current_player)
                                 if idx in moves:
-                                    self._apply_move_logic(idx)
+                                    self.trigger_move(idx)
+                                    
+    def bot_step(self) -> None:
+        # Check if we should start bot thinking
+        if self.state == "IDLE" and not self.game_over and self.is_bot and self.current_player == 1:
+            self.state = "THINKING"
+            self.bot_thinking_start = time.time()
 
-    def bot_step(self):
-        # Called from main loop to handle blocking bot logic
-        if not self.game_over and self.is_bot and self.current_player == 1:
-             move = None
-             if self.config['strategy'] == 'PPO-Agent':
-                 move = self.get_rl_move(self.board, self.current_player)
-             else:
-                 move = self.game_logic['ai'](self.board, self.current_player, depth=self.config['depth'], strategy=self.config['strategy'])
-             
-             if move is not None:
-                 self._apply_move_logic(move)
+    def execute_bot_move(self) -> None:
+        move = None
+        nodes = 0
+        if self.config['strategy'] == 'PPO-Agent':
+             move = self.get_rl_move(self.board, self.current_player)
+             nodes = 1 # RL is instant
+        else:
+             move, nodes = self.game_logic['ai'](self.board, self.current_player, depth=self.config['depth'], strategy=self.config['strategy'])
+        
+        self.last_move_nodes = nodes
+        self.total_nodes_analyzed += nodes
+        
+        if move is not None:
+            self.bot_choices.append(move)
+            self.trigger_move(move)
+        else:
+            self.state = "IDLE" # Should not happen if game not over
 
-    def _apply_move_logic(self, idx):
+    def _apply_move_logic(self, idx: int) -> None:
         self.board, extra = self.game_logic['apply'](self.board, idx, self.current_player)
         if not extra:
             self.current_player = 1 - self.current_player
@@ -128,120 +203,153 @@ class GameScreen:
             self.winner = 0 if p1 > p2 else 1 if p2 > p1 else 2
             self.game_logic['db'].save()
 
-    def draw_text(self, text, font, color, center=None, top_left=None):
+    def draw_text(self, text: str, font: pygame.font.Font, color: Tuple[int,int,int], center: Optional[Tuple[int,int]] = None, top_left: Optional[Tuple[int,int]] = None, right: Optional[Tuple[int,int]] = None) -> pygame.Rect:
         surf = font.render(text, True, color)
         if center: rect = surf.get_rect(center=center)
         elif top_left: rect = surf.get_rect(topleft=top_left)
+        elif right: rect = surf.get_rect(topright=right)
         else: rect = surf.get_rect()
         self.screen.blit(surf, rect)
         return rect
         
-    def draw_button(self, text, rect, active=False):
+    def draw_button(self, text: str, rect: pygame.Rect, active: bool = False) -> None:
         color = BUTTON_HOVER if active else BUTTON_COLOR
         pygame.draw.rect(self.screen, color, rect, border_radius=10)
         pygame.draw.rect(self.screen, ACCENT_COLOR, rect, 2, border_radius=10)
         self.draw_text(text, self.font_small, TEXT_COLOR, center=rect.center)
 
-    def draw(self):
-        
-        # Responsive Coordinates
+    def draw(self) -> None:
+        # Responsive 5-Zone Layout
         W, H = self.screen.get_size()
-        cx, cy = W // 2, H // 2
+        
+        # Dimensions for zones
+        top_bar_h = 80
+        bottom_bar_h = 100
+        left_sidebar_w = 250
+        right_sidebar_w = 200 # For hints/extra
+        
+        # Main Board Area Calculation
+        board_area_rect = pygame.Rect(
+            left_sidebar_w, 
+            top_bar_h, 
+            W - left_sidebar_w - right_sidebar_w, 
+            H - top_bar_h - bottom_bar_h
+        )
         
         self.screen.fill(BG_COLOR)
         
-        # Turn
+        # === TOP BAR (Status) ===
         status = f"Player {self.current_player + 1}"
         if self.is_bot and self.current_player == 1: status += " (Bot)"
-        self.draw_text(f"Turn: {status}", self.font_med, ACCENT_COLOR, center=(cx, 40))
+        self.draw_text(f"Turn: {status}", self.font_med, ACCENT_COLOR, center=(W//2, top_bar_h//2))
+        
+        if self.state == "ANIMATING":
+            status_txt = "Distributing..."
+        elif self.state == "THINKING":
+            status_txt = "Thinking..."
+        else:
+            status_txt = "Waiting..."
+        self.draw_text(status_txt, self.font_small, (150,150,150), center=(W//2, top_bar_h//2 + 30))
 
+        # === LEFT SIDEBAR (Stats & Config) ===
+        # Background for sidebar (optional, just use BG_COLOR)
+        panel_x = 20
+        panel_y = top_bar_h + 20
+        
+        self.draw_text("SCORE", self.font_med, ACCENT_COLOR, top_left=(panel_x, panel_y)); panel_y+=40
+        self.draw_text(f"P1: {self.board[6]}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=30
+        self.draw_text(f"P2: {self.board[13]}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=50
+        
+        self.draw_text("CONFIG", self.font_med, ACCENT_COLOR, top_left=(panel_x, panel_y)); panel_y+=40
+        self.draw_text(f"{self.config['strategy']}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=30
+        self.draw_text(f"{self.config['difficulty']}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=30
+        self.draw_text(f"Depth: {self.config['depth']}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=50
+        
+        self.draw_text("STATS", self.font_med, ACCENT_COLOR, top_left=(panel_x, panel_y)); panel_y+=40
+        self.draw_text(f"Last move nodes: {self.last_move_nodes}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=30
+        self.draw_text(f"Total nodes analyzed: {self.total_nodes_analyzed}", self.font_small, TEXT_COLOR, top_left=(panel_x, panel_y)); panel_y+=30
+
+        # === RIGHT SIDEBAR (Hints) ===
         # AI Hint
         hint = self.get_rl_move(self.board, self.current_player)
+        hint_x = W - right_sidebar_w + 20
+        hint_y = top_bar_h + 20
         if hint is not None:
             rel = hint+1 if self.current_player==0 else hint-7+1
-            self.draw_text(f"AI Suggests: Pit {rel}", self.font_small, (100, 200, 100), top_left=(W-250, H-40))
+            self.draw_text(f"AI Hint: Pit {rel}", self.font_small, (100, 200, 100), top_left=(hint_x, hint_y))
 
-        # Info Panel - Relative
-        panel_w = 220
-        panel_h = 450
-        panel_x = 40
-        panel_y = 120
-        panel = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
-        pygame.draw.rect(self.screen, BUTTON_COLOR, panel, border_radius=10)
+        # === BOARD AREA ===
+        # Padding within the board area
+        padding = 20
+        draw_rect = board_area_rect.inflate(-padding*2, -padding*2)
         
-        py = panel_y + 30
-        self.draw_text("SCORE", self.font_med, ACCENT_COLOR, center=(panel.centerx, py)); py+=50
-        self.draw_text(f"P1: {self.board[6]}", self.font_small, TEXT_COLOR, center=(panel.centerx, py)); py+=40
-        self.draw_text(f"P2: {self.board[13]}", self.font_small, TEXT_COLOR, center=(panel.centerx, py)); py+=60
-        self.draw_text("CONFIG", self.font_med, ACCENT_COLOR, center=(panel.centerx, py)); py+=40
-        self.draw_text(f"{self.config['strategy']}", self.font_small, TEXT_COLOR, center=(panel.centerx, py)); py+=40
-        self.draw_text(f"{self.config['difficulty']}", self.font_small, TEXT_COLOR, center=(panel.centerx, py)); py+=40
-        self.draw_text(f"Depth: {self.config['depth']}", self.font_small, TEXT_COLOR, center=(panel.centerx, py))
-
-        # Board - Relative
-        board_w = 600
-        board_h = 350
-        board_x = cx - (board_w // 2) + 50 # Shift slightly right due to panel
-        board_y = cy - (board_h // 2)
+        # Max out the board size while maintaining aspect ratio or just filling
+        # Logic: We want to fill this specific draw_rect
+        # Draw Border
+        pygame.draw.rect(self.screen, BORDER_BOARD, draw_rect, border_radius=20)
+        # Add a thicker outline
+        pygame.draw.rect(self.screen, ACCENT_COLOR, draw_rect, 2, border_radius=20)
         
-        board_area = pygame.Rect(board_x, board_y, board_w, board_h)
-        pygame.draw.rect(self.screen, BUTTON_COLOR, board_area, border_radius=20)
+        # Calculate proportional coordinates
+        cx = draw_rect.centerx
+        cy = draw_rect.centery
+        bw = draw_rect.width
+        bh = draw_rect.height
         
-        # Pits & Stores
+        # Stores
+        store_w = bw * 0.12 # 12% width
+        store_h = bh * 0.7  # 70% height
+        
+        # P2 Store (Left)
+        p2_store_rect = pygame.Rect(draw_rect.x + 20, cy - store_h/2, store_w, store_h)
+        # P1 Store (Right) - Ensure correct spacing
+        p1_store_rect = pygame.Rect(draw_rect.right - 20 - store_w, cy - store_h/2, store_w, store_h)
+        
+        # Pits Area
+        # Space between stores
+        pits_area_w = (p1_store_rect.x - 20) - (p2_store_rect.right + 20)
+        pit_spacing = pits_area_w / 6
+        pit_radius = min(pit_spacing / 2.5, bh * 0.15) # Scale radius
+        
+        start_pit_x = p2_store_rect.right + 20 + (pit_spacing/2)
+        
+        t_row_y = cy - (bh * 0.15)
+        b_row_y = cy + (bh * 0.15)
+        
         self.pit_rects = []
         
-        # Dimensions
-        pit_radius = 35
-        pit_spacing = 80
-        store_w = 60
-        store_h = 240
-        
-        # Store Positions
-        p2_store_rect = pygame.Rect(board_x + 20, board_y + (board_h - store_h)//2, store_w, store_h)
-        p1_store_rect = pygame.Rect(board_x + board_w - 20 - store_w, board_y + (board_h - store_h)//2, store_w, store_h)
-
-        # Pit Rows
-        # P2 Top Row
-        t_row_y = board_y + 100
-        b_row_y = board_y + board_h - 100
-        
-        start_pit_x = p2_store_rect.right + 20 + pit_radius
-        
-        # P2 (Top)
+        # Draw Pits
         for i in range(6):
+            # P2 (Top)
             idx = 12-i
-            # 12 is leftmost of P2 (closest to their store)
-            # Layout: STORE | 12 11 10 9 8 7 |
             x = start_pit_x + i * pit_spacing
             center = (x, t_row_y)
-            
-            pygame.draw.circle(self.screen, (60,40,20), center, pit_radius)
-            pygame.draw.circle(self.screen, ACCENT_COLOR, center, pit_radius, 2)
-            self.draw_text(str(self.board[idx]), self.font_small, TEXT_COLOR, center=center)
-            
-        # P1 (Bottom)
-        for i in range(6):
-            idx = i
-            # 0 is leftmost (Start from left)
-            # Layout: | 0 1 2 3 4 5 | STORE
+            self.draw_pit(idx, center, int(pit_radius))
+
+            # P1 (Bottom)
+            idx_p1 = i
             x = start_pit_x + i * pit_spacing
             center = (x, b_row_y)
+            self.draw_pit(idx_p1, center, int(pit_radius))
             
-            pygame.draw.circle(self.screen, (60,40,20), center, pit_radius)
-            hl_color = ACCENT_COLOR if (self.current_player==0 and not self.game_over) else (100,100,100)
-            pygame.draw.circle(self.screen, hl_color, center, pit_radius, 2)
-            self.draw_text(str(self.board[idx]), self.font_small, TEXT_COLOR, center=center)
-            
-            r = pygame.Rect(0,0, pit_radius*2, pit_radius*2); r.center = center
-            self.pit_rects.append((r, idx))
-            
-        # Draw Stores
+            # Clickable handling for P1
+            # Hitbox can be slightly larger
+            r = pygame.Rect(0,0, pit_radius*2.2, pit_radius*2.2); r.center = center
+            self.pit_rects.append((r, idx_p1))
+
+        # Draw Stores with distinct border
         pygame.draw.rect(self.screen, (60,40,20), p2_store_rect, border_radius=10)
+        pygame.draw.rect(self.screen, BORDER_STORE, p2_store_rect, 4, border_radius=10) # Thicker distinct border
         self.draw_text(str(self.board[13]), self.font_med, TEXT_COLOR, center=p2_store_rect.center)
         
         pygame.draw.rect(self.screen, (60,40,20), p1_store_rect, border_radius=10)
+        pygame.draw.rect(self.screen, BORDER_STORE, p1_store_rect, 4, border_radius=10) # Thicker distinct border
         self.draw_text(str(self.board[6]), self.font_med, TEXT_COLOR, center=p1_store_rect.center)
         
+        # === BOTTOM BAR (Controls) ===
+        # Currently empty or just copyright/padding
+        
+        # === OVERLAYS ===
         if self.game_over:
             over = pygame.Surface((W, H), pygame.SRCALPHA)
             over.fill((0,0,0,180))
@@ -249,9 +357,29 @@ class GameScreen:
             txt = "Draw!"
             if self.winner==0: txt="Player 1 Wins!"
             elif self.winner==1: txt="Player 2 Wins!"
-            self.draw_text(txt, pygame.font.SysFont("Arial", 64, bold=True), ACCENT_COLOR, center=(cx, cy))
+            self.draw_text(txt, pygame.font.SysFont("Arial", 64, bold=True), ACCENT_COLOR, center=(W//2, H//2))
             
             rst_w, rst_h = 200, 60
-            rst = pygame.Rect(cx - rst_w//2, cy + 80, rst_w, rst_h)
+            rst = pygame.Rect(W//2 - rst_w//2, H//2 + 80, rst_w, rst_h)
             self.draw_button("Menu", rst, active=rst.collidepoint(pygame.mouse.get_pos()))
             self.buttons["reset"] = rst
+
+    def draw_pit(self, idx: int, center: Tuple[float, float], radius: int) -> None:
+        # Color Logic
+        fill = (60,40,20)
+        
+        # Highlight Logic
+        if self.state == "ANIMATING" and self.anim_current_idx == idx:
+            fill = (150, 100, 50) # Highlight Color
+            
+        pygame.draw.circle(self.screen, fill, center, radius)
+        
+        # Ouline - distinct for player side logic
+        outline = ACCENT_COLOR
+        if self.current_player == 0 and idx < 7 and not self.game_over:
+             outline = ACCENT_COLOR
+        else:
+             outline = (80,60,40)
+             
+        pygame.draw.circle(self.screen, outline, center, radius, 2)
+        self.draw_text(str(self.board[idx]), self.font_small, TEXT_COLOR, center=center)
