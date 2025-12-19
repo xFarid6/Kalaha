@@ -35,7 +35,7 @@ class GameGUI:
         }
         
         # Presets
-        self.strategies = ["basic", "balanced", "aggressive", "defensive"]
+        self.strategies = ["basic", "balanced", "aggressive", "defensive", "PPO-Agent"]
         self.difficulties = ["Beginner", "Easy", "Medium", "Hard", "Hell"]
         self.colors = ["Gold", "Red", "Blue", "Green", "White"]
         
