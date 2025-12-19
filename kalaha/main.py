@@ -2,15 +2,13 @@ import sys
 import time
 
 # Ensure we can import modules from the same directory
+import sys
+import os
+
+# Ensure parent directory is in path for imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 try:
-    from game_logic import (
-        initial_state, legal_moves, apply_move, is_terminal, 
-        evaluate, cleanup_board, P1_PITS, P2_PITS, P1_STORE, P2_STORE
-    )
-    from ai_engine import get_best_move
-    from endgame_db import endgame_db
-    import gui_app
-except ImportError:
     from kalaha.game_logic import (
         initial_state, legal_moves, apply_move, is_terminal, 
         evaluate, cleanup_board, P1_PITS, P2_PITS, P1_STORE, P2_STORE
@@ -18,6 +16,17 @@ except ImportError:
     from kalaha.ai_engine import get_best_move
     from kalaha.endgame_db import endgame_db
     import kalaha.gui_app as gui_app
+except ImportError:
+    # Fallback/Local imports if running from within kalaha/ dir without package structure?
+    # Ideally the sys.path append above solves this, making 'kalaha' accessible.
+    # But let's keep local fallback just in case, but cleaner.
+    from game_logic import (
+        initial_state, legal_moves, apply_move, is_terminal, 
+        evaluate, cleanup_board, P1_PITS, P2_PITS, P1_STORE, P2_STORE
+    )
+    from ai_engine import get_best_move
+    from endgame_db import endgame_db
+    import gui_app
 
 def print_board(board):
     print("\n" + "="*40)
@@ -66,6 +75,7 @@ def main():
     print("1. Human vs Human")
     print("2. Human (P1) vs Bot (P2)")
     print("3. Bot (P1) vs Human (P2)")
+    print("4. Bot (P1) vs Bot (P2) (Simulation)")
     
     mode_input = input("Select mode: ")
     mode = 'HvH'
@@ -73,10 +83,13 @@ def main():
         mode = 'HvB'
     elif mode_input == '3':
         mode = 'BvH'
+    elif mode_input == '4':
+        mode = 'BvB'
         
     # Configuration
     bot_depth = 6
     bot_strategy = 'balanced'
+    sim_delay = 0.5
     
     if mode != 'HvH':
         try:
@@ -88,6 +101,11 @@ def main():
             s_input = input("Enter Bot Strategy (default 'balanced'): ")
             if s_input.strip():
                 bot_strategy = s_input.strip()
+
+            if mode == 'BvB':
+                t_input = input("Simulation Delay (seconds, default 0.5): ")
+                if t_input.strip():
+                    sim_delay = float(t_input)
                 
         except ValueError:
             print("Invalid input, using defaults.")
@@ -102,14 +120,20 @@ def main():
         move = -1
         
         is_bot = False
-        if (mode == 'HvB' and current_player == 1) or \
-           (mode == 'BvH' and current_player == 0):
+        if mode == 'BvB':
+            is_bot = True
+        elif (mode == 'HvB' and current_player == 1) or \
+             (mode == 'BvH' and current_player == 0):
             is_bot = True
             
         print(f"Turn: Player {current_player + 1} ({'Bot' if is_bot else 'Human'})")
         
         if is_bot:
             print(f"Bot (Strategy: {bot_strategy}, Depth: {bot_depth}) is thinking...")
+            
+            if mode == 'BvB':
+                time.sleep(sim_delay)
+                
             move = get_best_move(board, current_player, depth=bot_depth, strategy=bot_strategy)
             if move is None:
                 print("Bot has no legal moves!")
