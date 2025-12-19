@@ -1,23 +1,29 @@
 import os
-import glob
 import sys
 import gymnasium as gym
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.monitor import Monitor
 
 # Ensure we can import the env
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+# We are in kalaha/ai_training, so root is ../..
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from kalaha.training.kalaha_env import KalahaEnv
+try:
+    from kalaha.training.kalaha_env import KalahaEnv
+except ImportError:
+    # Fallback if run from root
+    from kalaha.training.kalaha_env import KalahaEnv
 
 # Parameters
 TIMESTEPS_PER_ITERATION = 50_000
-TOTAL_ITERATIONS = 10  # Total 500k steps for intro
-MODEL_DIR = "models"
-LOG_DIR = "logs"
+TOTAL_ITERATIONS = 10  # Total 500k steps
+MODEL_DIR = os.path.join("..", "models") # Relative to this script? No, let's make it absolute or relative to root
+# Best to use absolute from root
+MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models'))
+LOG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'logs'))
 
 def make_env():
     env = KalahaEnv()
@@ -29,13 +35,12 @@ def train():
     os.makedirs(MODEL_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
     
-    print("Initializing Full Kalaha Training...")
+    print("Initializing Full Kalaha Training (v0)...")
     
     env = make_env()
     
     # Initialize Agent
-    # If a model exists, load it? For now start fresh or load 'latest'
-    model_path = f"{MODEL_DIR}/kalaha_latest.zip"
+    model_path = os.path.join(MODEL_DIR, "kalaha_latest.zip")
     
     if os.path.exists(model_path):
         print(f"Loading existing model from {model_path}")
@@ -56,26 +61,8 @@ def train():
     checkpoint_callback = CheckpointCallback(
         save_freq=10000,
         save_path=MODEL_DIR,
-        name_prefix="kalaha_ppo"
+        name_prefix="kalaha_ppo_v0"
     )
-    
-    # Self-Play Loop
-    # In a rigorous self-play, we would update the opponent environment. 
-    # Current KalahaEnv defines opponent as 'Environment Logic' (Standard Rules) or Random?
-    # Our env implements rules. To do self-play, the 'step' function needs to call the opponent model.
-    # Currently KalahaEnv.step() just applies a move. It assumes the caller handles the other player?
-    # NO: KalahaEnv.step applies ONE move and swaps turn.
-    # PPO learns to play BOTH sides if we just flip observation.
-    # But when playing, it plays against...?
-    # If we train simply with PPO, the "opponent" moves are also chosen by PPO? 
-    # No, PPO calls step(), gets new state.
-    # If new state is P2 turn, and PPO predicts move for P2.
-    # So PPO is playing against ITSELF naturally in a single environment instance 
-    # if the env just asks "What move for Player X?".
-    # Yes! Because we flip the board in _get_obs, the network ALWAYS sees itself as "Player 0".
-    # So it learns: "Given board state X, make move Y".
-    # Since it plays both sides in the rollouts, it IS self-play (shared weights).
-    # This is "Symmetric Self-Play".
     
     print(f"Starting Training for {TOTAL_ITERATIONS} iterations of {TIMESTEPS_PER_ITERATION} steps...")
     
@@ -88,8 +75,8 @@ def train():
         )
         
         # Save "latest"
-        model.save(f"{MODEL_DIR}/kalaha_latest")
-        model.save(f"{MODEL_DIR}/kalaha_iter_{i+1}")
+        model.save(os.path.join(MODEL_DIR, "kalaha_latest"))
+        model.save(os.path.join(MODEL_DIR, f"kalaha_iter_{i+1}"))
         print(f"Iteration {i+1} complete. Model saved.")
         
     print("Training Complete!")

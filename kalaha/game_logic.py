@@ -117,3 +117,32 @@ def apply_move(board, move, player):
                 new_board[opposite_idx] = 0
                 
     return new_board, False
+
+def get_sowing_path(board, move, player):
+    """
+    Calculates the sequence of pits that receive a seed during this move.
+    Returns a list of pit indices.
+    Used for UI animation.
+    """
+    path = []
+    seeds = board[move]
+    current_idx = move
+    
+    # Determine the path without mutating (simplification: just trace)
+    # We must replicate the 'skip opponent store' logic
+    
+    temp_seeds = seeds
+    
+    while temp_seeds > 0:
+        current_idx = (current_idx + 1) % TOTAL_PITS
+        
+        # Skip opponent's store
+        if player == 0 and current_idx == P2_STORE:
+            continue
+        if player == 1 and current_idx == P1_STORE:
+            continue
+            
+        path.append(current_idx)
+        temp_seeds -= 1
+        
+    return path

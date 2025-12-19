@@ -6,9 +6,12 @@ from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 
 # Ensure we can import the env
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from kalaha.training.kalaha_env import KalahaEnv
+try:
+    from kalaha.training.kalaha_env import KalahaEnv
+except ImportError:
+    from kalaha.training.kalaha_env import KalahaEnv
 
 def make_env():
     return KalahaEnv()
@@ -34,7 +37,7 @@ def train():
         gamma=0.99,
         n_steps=2048,
         batch_size=64,
-        tensorboard_log="./kalaha_tensorboard/"
+        tensorboard_log=os.path.join("..", "..", "logs")
     )
     
     # 3. Train (for a short demo duration)
@@ -43,8 +46,8 @@ def train():
     model.learn(total_timesteps=10000)
     
     # 4. Save
-    model.save("kalaha_ppo_model")
-    print("Model saved as kalaha_ppo_model.zip")
+    model.save(os.path.join("..", "..", "models", "kalaha_ppo_scaffold"))
+    print("Model saved.")
     
     # Demonstration of loading and playing would go here
 
