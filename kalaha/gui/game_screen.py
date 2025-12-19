@@ -86,7 +86,7 @@ class GameScreen:
         self.is_bot = True # Default P2=Bot
         self.pit_rects = []
         self.buttons = {}
-        self.state = "IDLE"
+        self.state = ScreenState.IDLE
         self.anim_queue = []
         self.last_move_nodes = 0
         self.total_nodes_analyzed = 0
@@ -113,7 +113,7 @@ class GameScreen:
         if len(self.undo_history) <= 1:  # Only initial state
             return False
             
-        if self.state != "IDLE":  # Safety check
+        if self.state != ScreenState.IDLE:  # Safety check
             return False
             
         # Reverse animation
@@ -126,7 +126,7 @@ class GameScreen:
                 # Calculate reverse path
                 path = self.game_logic['get_path'](prev_state['board'], move, prev_state['current_player'])
                 self.anim_queue = list(reversed(path))
-                self.state = "UNDO_ANIMATING"
+                self.state = ScreenState.UNDO_ANIMATING
                 self.anim_timer = time.time()
         
         # Pop current state
@@ -180,7 +180,7 @@ class GameScreen:
         # Calculate animation path
         path = self.game_logic['get_path'](self.board, idx, self.current_player)
         self.anim_queue = path
-        self.state = "ANIMATING"
+        self.state = ScreenState.ANIMATING
         self.anim_timer = time.time()
         self.anim_move_idx = idx
 
@@ -188,11 +188,11 @@ class GameScreen:
         current_time = time.time()
         
         # Handle Animation (normal forward)
-        if self.state == "ANIMATING":
+        if self.state == ScreenState.ANIMATING:
             if not self.anim_queue:
                 # Animation Done, Apply Logic
                 self._apply_move_logic(self.anim_move_idx)
-                self.state = "IDLE"
+                self.state = ScreenState.IDLE
                 self.anim_current_idx = None
             else:
                 sow_delay = self.config.get('anim_speed', 0.5)
@@ -203,10 +203,10 @@ class GameScreen:
             return # Block interaction during animation
         
         # Handle UNDO Animation (backwards)
-        if self.state == "UNDO_ANIMATING":
+        if self.state == ScreenState.UNDO_ANIMATING:
             if not self.anim_queue:
                 # UNDO animation complete
-                self.state = "IDLE"
+                self.state = ScreenState.IDLE
                 self.anim_current_idx = None
             else:
                 sow_delay = self.config.get('anim_speed', 0.5) * 0.7  # Slightly faster for undo
@@ -216,7 +216,7 @@ class GameScreen:
             return
 
         # Handle Bot Thinking Delay
-        if self.state == "THINKING":
+        if self.state == ScreenState.THINKING:
             # Add artificial delay 0.5s + computation
             if current_time - self.bot_thinking_start > 0.5:
                 self.execute_bot_move()
@@ -245,8 +245,8 @@ class GameScreen:
                                     
     def bot_step(self) -> None:
         # Check if we should start bot thinking
-        if self.state == "IDLE" and not self.game_over and self.is_bot and self.current_player == 1:
-            self.state = "THINKING"
+        if self.state == ScreenState.IDLE and not self.game_over and self.is_bot and self.current_player == 1:
+            self.state = ScreenState.THINKING
             self.bot_thinking_start = time.time()
 
     def execute_bot_move(self) -> None:
@@ -265,7 +265,7 @@ class GameScreen:
             self.bot_choices.append(move)
             self.trigger_move(move)
         else:
-            self.state = "IDLE" # Should not happen if game not over
+            self.state = ScreenState.IDLE # Should not happen if game not over
 
     def _apply_move_logic(self, idx: int) -> None:
         self.board, extra = self.game_logic['apply'](self.board, idx, self.current_player)
@@ -339,9 +339,9 @@ class GameScreen:
         if self.is_bot and self.current_player == 1: status += " (Bot)"
         self.draw_text(f"Turn: {status}", self.font_med, ACCENT_COLOR, center=(W//2, top_bar_h//2))
         
-        if self.state == "ANIMATING":
+        if self.state == ScreenState.ANIMATING:
             status_txt = "Distributing..."
-        elif self.state == "THINKING":
+        elif self.state == ScreenState.THINKING:
             status_txt = "Thinking..."
         else:
             status_txt = "Waiting..."
@@ -450,7 +450,7 @@ class GameScreen:
             undo_y = H - bottom_bar_h + 25
             undo_rect = pygame.Rect(undo_x, undo_y, undo_w, undo_h)
             
-            is_active = undo_rect.collidepoint(pygame.mouse.get_pos()) and self.state == "IDLE"
+            is_active = undo_rect.collidepoint(pygame.mouse.get_pos()) and self.state == ScreenState.IDLE
             self.draw_button(f"← UNDO ({len(self.undo_history)-1})", undo_rect, active=is_active)
             self.buttons["undo"] = undo_rect
             
@@ -479,7 +479,7 @@ class GameScreen:
         fill = (60,40,20)
         
         # Highlight Logic
-        if self.state == "ANIMATING" and self.anim_current_idx == idx:
+        if self.state == ScreenState.ANIMATING and self.anim_current_idx == idx:
             fill = (150, 100, 50) # Highlight Color
             
         pygame.draw.circle(self.screen, fill, center, radius)

@@ -61,6 +61,25 @@ def get_human_move(board, player):
         except ValueError:
             print("Invalid input.")
 
+def get_player_type(mode: str, current_player: int) -> str:
+    """Determine player type based on mode and current player"""
+    if mode == 'BvB':
+        return 'bot', 'bot'
+    
+    if mode == 'HvA':
+        return ('human', 'agent') if current_player == 0 else ('agent', 'human')
+    
+    if mode == 'AvB':
+        return ('agent', 'bot') if current_player == 0 else ('bot', 'agent')
+        
+    if mode == 'HvB':
+        return ('human', 'bot') if current_player == 0 else ('bot', 'human')
+        
+    if mode == 'BvH':
+        return ('bot', 'human') if current_player == 0 else ('human', 'bot')
+        
+    return ('human', 'human')  # HvH default
+
 def main():
     print("Welcome to Kalaha!")
     print("[1] Terminal Mode")
@@ -80,17 +99,18 @@ def main():
     print("6. RL Agent vs Bot (Simulation)")
     
     mode_input = input("Select mode: ")
-    mode = 'HvH'
-    if mode_input == '2':
-        mode = 'HvB'
-    elif mode_input == '3':
-        mode = 'BvH'
-    elif mode_input == '4':
-        mode = 'BvB'
-    elif mode_input == '5':
-        mode = 'HvA'  # Human vs Agent
-    elif mode_input == '6':
-        mode = 'AvB'  # Agent vs Bot
+    
+    # Mode mapping for cleaner code
+    MODE_MAP = {
+        '1': 'HvH',
+        '2': 'HvB',
+        '3': 'BvH',
+        '4': 'BvB',
+        '5': 'HvA',
+        '6': 'AvB'
+    }
+    
+    mode = MODE_MAP.get(mode_input, 'HvH')  # Default to HvH if invalid
         
     # Configuration
     bot_depth = 6
@@ -125,36 +145,18 @@ def main():
         extra_turn = False
         move = -1
         
-        is_bot = False
-        is_agent = False
+        # Determine player types
+        p1_type, p2_type = get_player_type(mode, current_player)
+        player_type = p1_type if current_player == 0 else p2_type
         
-        if mode == 'BvB':
-            is_bot = True
-        elif mode in ['AvB', 'HvA']:
-            # Check if current player is RL agent
-            if (mode == 'HvA' and current_player == 1) or (mode == 'AvB' and current_player == 0):
-                is_agent = True
-            elif mode == 'AvB' and current_player == 1:
-                is_bot = True
-        elif (mode == 'HvB' and current_player == 1) or \
-             (mode == 'BvH' and current_player == 0):
-            is_bot = True
-            
-        player_type = 'Human'
-        if is_bot:
-            player_type = 'Bot'
-        elif is_agent:
-            player_type = 'RL Agent'
-            
-        print(f"Turn: Player {current_player + 1} ({player_type})")
+        print(f"Turn: Player {current_player + 1} ({player_type.title()})")
         
-        if is_agent:
+        
+        # Execute move based on player type
+        if player_type == 'agent':
             # RL Agent move
             print("RL Agent is thinking...")
             try:
-                from kalaha.gui.game_screen import GameScreen
-                # Use the same RL logic as GUI
-                # Create a minimal object to use get_rl_move
                 import numpy as np
                 from sb3_contrib import MaskablePPO
                 import os
@@ -191,7 +193,7 @@ def main():
                 valid = legal_moves(board, current_player)
                 move = valid[0] if valid else None
                 
-        elif is_bot:
+        elif player_type == 'bot':
             print(f"Bot (Strategy: {bot_strategy}, Depth: {bot_depth}) is thinking...")
             
             if mode == 'BvB':
@@ -204,7 +206,7 @@ def main():
             # Display relative move for readability
             rel_move = move + 1 if current_player == 0 else move - 7 + 1
             print(f"Bot chose pit: {rel_move} (Index {move}) [Analyzed {nodes} nodes]")
-        else:
+        else:  # human
             move = get_human_move(board, current_player)
             
         if move is None:
