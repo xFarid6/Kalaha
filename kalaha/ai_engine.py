@@ -17,25 +17,58 @@ except ImportError:
 MAX_DEPTH = 6
 INF = float('inf')
 
+try:
+    from game_logic import (
+        legal_moves, apply_move, is_terminal, evaluate,
+        P1_PITS, P2_PITS, P1_STORE, P2_STORE, cleanup_board
+    )
+    from zobrist_hashing import zobrist
+    from endgame_db import endgame_db
+except ImportError:
+    from kalaha.game_logic import (
+        legal_moves, apply_move, is_terminal, evaluate,
+        P1_PITS, P2_PITS, P1_STORE, P2_STORE, cleanup_board
+    )
+    from kalaha.zobrist_hashing import zobrist
+    from kalaha.endgame_db import endgame_db
+
+# Constants
+MAX_DEPTH = 6
+INF = float('inf')
+
 # Transposition Table
-# Key: Hash (int)
-# Value: (score, depth, flag, best_move)
 TT = {}
 
-def evaluate_heuristic(board, player):
+def evaluate_heuristic(board, player, strategy='balanced'):
     """
-    Advanced heuristic evaluation.
+    Advanced heuristic evaluation with multiple strategies.
     Positive value favors Player 0 (P1/Max).
+    Strategies: 'balanced', 'aggressive', 'defensive', 'basic'
     """
-    score = board[P1_STORE] - board[P2_STORE]
+    store_diff = board[P1_STORE] - board[P2_STORE]
     
-    # Material on board (0.5 weight)
-    # Having seeds on your side is generally good for defense and mobility
+    if strategy == 'basic':
+        return store_diff
+        
     p1_side_seeds = sum(board[i] for i in P1_PITS)
     p2_side_seeds = sum(board[i] for i in P2_PITS)
+    side_diff = p1_side_seeds - p2_side_seeds
     
-    score += 0.5 * (p1_side_seeds - p2_side_seeds)
+    score = store_diff
     
+    if strategy == 'balanced':
+        score += 0.5 * side_diff
+    elif strategy == 'defensive':
+        # Prioritize keeping seeds on own side to prevent opponent capturing/running out
+        score += 0.8 * side_diff
+        # Penalize empty pits on own side?
+        empty_p1 = sum(1 for i in P1_PITS if board[i] == 0)
+        score -= 2.0 * empty_p1
+    elif strategy == 'aggressive':
+        # Prioritize side control less, focus on mobility/captures (handled in move ordering?)
+        # Maybe value opponent having few seeds (vulnrability)
+        score += 0.3 * side_diff
+        
     return score
 
 def order_moves(board, moves, player):
@@ -75,14 +108,24 @@ def order_moves(board, moves, player):
     ordered.sort(key=lambda x: x[0], reverse=True)
     return [m for p, m in ordered]
 
-def alphabeta_tt(board, depth, alpha, beta, maximizing_player):
+def alphabeta_tt_db(board, depth, alpha, beta, maximizing_player, strategy='balanced'):
     """
-    Minimax with Alpha-Beta pruning and Transposition Table.
+    Minimax with Alpha-Beta pruning, Transposition Table, and Endgame DB.
     """
     current_player = 0 if maximizing_player else 1
+    
+    # 1. Endgame DB Lookup (if seeds low enough)
+    # Check if total seeds is within DB range (e.g. <= max_seeds in DB + X to grow it?)
+    # For now, trust the user logic "read from when seeds <= 10" (or loaded max)
+    total_seeds = sum(board)
+    if total_seeds <= max(10, endgame_db.max_seeds):
+        exact_val = endgame_db.lookup(board, current_player)
+        if exact_val is not None:
+            return exact_val
+
     board_hash = zobrist.compute_hash(board, current_player)
     
-    # TT Lookup
+    # 2. TT Lookup
     if board_hash in TT:
         tt_val, tt_depth, tt_flag = TT[board_hash]
         if tt_depth >= depth:
@@ -96,12 +139,18 @@ def alphabeta_tt(board, depth, alpha, beta, maximizing_player):
             if alpha >= beta:
                 return tt_val
 
+    # 3. Terminal Node or Depth Limit
     if depth == 0 or is_terminal(board):
         if is_terminal(board):
             final_board = cleanup_board(board)
-            return final_board[P1_STORE] - final_board[P2_STORE]
+            val = final_board[P1_STORE] - final_board[P2_STORE]
+            
+            # Save solved terminal state to DB + TT
+            endgame_db.add(board, current_player, val)
+            TT[board_hash] = (val, 100, 'EXACT') # Depth 100 for terminal
+            return val
         
-        val = evaluate_heuristic(board, 0)
+        val = evaluate_heuristic(board, 0, strategy)
         TT[board_hash] = (val, depth, 'EXACT')
         return val
     
@@ -109,7 +158,6 @@ def alphabeta_tt(board, depth, alpha, beta, maximizing_player):
     ordered_moves = order_moves(board, possible_moves, current_player)
     
     best_value = -INF if maximizing_player else INF
-    # default flag
     tt_flag = 'EXACT' 
 
     if maximizing_player:
@@ -118,16 +166,16 @@ def alphabeta_tt(board, depth, alpha, beta, maximizing_player):
             new_board, extra = apply_move(board, move, 0)
             
             if extra:
-                score = alphabeta_tt(new_board, depth, alpha, beta, True)
+                score = alphabeta_tt_db(new_board, depth, alpha, beta, True, strategy)
             else:
-                score = alphabeta_tt(new_board, depth - 1, alpha, beta, False)
+                score = alphabeta_tt_db(new_board, depth - 1, alpha, beta, False, strategy)
 
             if score > value:
                 value = score
             
             alpha = max(alpha, value)
             if alpha >= beta:
-                tt_flag = 'LOWERBOUND' # Beta cutoff
+                tt_flag = 'LOWERBOUND'
                 break
     else:
         value = INF
@@ -135,34 +183,28 @@ def alphabeta_tt(board, depth, alpha, beta, maximizing_player):
             new_board, extra = apply_move(board, move, 1)
             
             if extra:
-                score = alphabeta_tt(new_board, depth, alpha, beta, False)
+                score = alphabeta_tt_db(new_board, depth, alpha, beta, False, strategy)
             else:
-                score = alphabeta_tt(new_board, depth - 1, alpha, beta, True)
+                score = alphabeta_tt_db(new_board, depth - 1, alpha, beta, True, strategy)
             
             if score < value:
                 value = score
                 
             beta = min(beta, value)
             if beta <= alpha:
-                tt_flag = 'UPPERBOUND' # Alpha cutoff
+                tt_flag = 'UPPERBOUND' 
                 break
 
-    # Store in TT
-    # If we had a cutoff, the value is a bound.
-    # Actually, simple version:
-    # If val <= original_alpha -> Upper Bound (Fail Low)
-    # If val >= original_beta -> Lower Bound (Fail High)
-    # Else Exact
-    # Here using simplified flag assignment from loop break
-    
     TT[board_hash] = (value, depth, tt_flag)
+    
+    # If this was a deep search result (e.g. fully solved or very deep), we could add to DB too?
+    # For now, only terminal states are added to DB safely inside the recursion.
+    
     return value
 
-def get_best_move(board, player, depth=MAX_DEPTH):
+def get_best_move(board, player, depth=MAX_DEPTH, strategy='balanced'):
     """
     Determine the best move for the AI.
-    player: 0 (Maximizing, P1) or 1 (Minimizing, P2)
-    Returns the best move index.
     """
     possible_moves = legal_moves(board, player)
     ordered_moves = order_moves(board, possible_moves, player)
@@ -180,9 +222,9 @@ def get_best_move(board, player, depth=MAX_DEPTH):
         new_board, extra_turn = apply_move(board, move, player)
         
         if extra_turn:
-            score = alphabeta_tt(new_board, depth, alpha, beta, player == 0)
+            score = alphabeta_tt_db(new_board, depth, alpha, beta, player == 0, strategy)
         else:
-            score = alphabeta_tt(new_board, depth - 1, alpha, beta, player != 0)
+            score = alphabeta_tt_db(new_board, depth - 1, alpha, beta, player != 0, strategy)
         
         if player == 0:
             if score > best_value:
