@@ -1,0 +1,35 @@
+/**
+* Snake - Web Version
+* Main game page
+*/
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Snake - Classic arcade game">
+    <title>Snake - Classic Arcade Game</title>
+    <link rel="stylesheet" href="css/snake-styles.css">
+</head>
+
+<body>
+    <!-- Game Container -->
+    <div id="game-container">
+        <!-- Canvas for game rendering -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- UI Overlay -->
+        <div id="ui-overlay" class="hidden">
+            <div id="score-display">Score: <span id="score">0</span></div>
+        </div>
+    </div>
+
+    <!-- Back to Home Button -->
+    <button id="btn-home" class="btn-home" onclick="location.href='../../../index.html'">←Back to Home</button>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

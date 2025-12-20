@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mini Games Gallery - A collection of classic games reimagined for the web">
+    <title>Mini Games Gallery - Play Classic Games Online</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">Mini Games Gallery</h1>
+            <p class="hero-subtitle">Classic Strategy • Modern Experience</p>
+            <p class="hero-description">
+                Explore a curated collection of timeless games, reimagined with cutting-edge AI and beautiful web
+                interfaces.
+            </p>
+        </div>
+    </section>
+
+    <!-- Games Section -->
+    <section class="games-section">
+        <div class="container">
+            <h2 class="section-title">Available Now</h2>
+
+            <div class="games-grid">
+                <!-- Kalaha Game Card -->
+                <div class="game-card" onclick="location.href='games/js/kalaha/kalaha.html'">
+                    <img src="images/kalaha-thumb.png" alt="Kalaha Game" class="game-thumbnail">
+                    <div class="game-info">
+                        <h3 class="game-title">Kalaha</h3>
+                        <p class="game-description">
+                            The ancient strategy game of Mancala, featuring intelligent AI opponents and smooth
+                            animations.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Strategy</span>
+                            <span class="game-tag">AI Opponent</span>
+                            <span class="game-tag">2 Players</span>
+                        </div>
+                        <button class="play-button">Play Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 4rem;">Coming Soon - Arcade Classics</h2>
+
+            <div class="games-grid">
+                <!-- Pong -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <img src="images/pong-thumb.png" alt="Pong Game" class="game-thumbnail">
+                    <div class="game-info">
+                        <h3 class="game-title">Pong</h3>
+                        <p class="game-description">
+                            The legendary arcade classic! Fast-paced paddle action with modern physics and AI.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Arcade</span>
+                            <span class="game-tag">AI Opponent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tetris -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #9333ea 0%, #d97706 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Tetris</h3>
+                        <p class="game-description">
+                            Classic falling block puzzle with modern graphics and smooth controls.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Puzzle</span>
+                            <span class="game-tag">Arcade</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Snake -->
+                <div class="game-card" onclick="location.href='games/js/snake/snake.html'">
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #059669 0%, #9333ea 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Snake</h3>
+                        <p class="game-description">
+                            Guide your snake to eat and grow while avoiding walls and yourself!
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Arcade</span>
+                            <span class="game-tag">Classic</span>
+                        </div>
+                        <button class="play-button">Play Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 4rem;">Coming Soon - Strategy Games</h2>
+
+            <div class="games-grid">
+                <!-- Tic-Tac-Toe -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #6366f1 0%, #daa520 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Tic-Tac-Toe</h3>
+                        <p class="game-description">
+                            Classic 3x3 grid game with unbeatable AI powered by minimax algorithm.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Strategy</span>
+                            <span class="game-tag">Quick</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connect-4 -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #dc2626 0%, #fbbf24 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Connect-4</h3>
+                        <p class="game-description">
+                            Drop pieces to connect four in a row. Strategic depth meets simple rules.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Strategy</span>
+                            <span class="game-tag">2 Players</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chess -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #1f2937 0%, #9333ea 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Mini-Chess</h3>
+                        <p class="game-description">
+                            Simplified chess on a 6x6 board. All the strategy, faster gameplay!
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Strategy</span>
+                            <span class="game-tag">Deep</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Othello -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #0f172a 0%, #daa520 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Othello</h3>
+                        <p class="game-description">
+                            Flip opponent's pieces in this elegant and strategic board game.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Strategy</span>
+                            <span class="game-tag">Classic</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 4rem;">Coming Soon - Puzzle Games</h2>
+
+            <div class="games-grid">
+                <!-- 2048 -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #f59e0b 0%, #9333ea 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">2048</h3>
+                        <p class="game-description">
+                            Slide and merge number tiles to reach 2048 and beyond!
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Puzzle</span>
+                            <span class="game-tag">Addictive</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sokoban -->
+                <div class="game-card coming-soon">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="game-thumbnail" style="background: linear-gradient(135deg, #0891b2 0%, #daa520 100%);">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">Sokoban</h3>
+                        <p class="game-description">
+                            Push boxes to their targets in this classic warehouse puzzle game.
+                        </p>
+                        <div class="game-tags">
+                            <span class="game-tag">Puzzle</span>
+                            <span class="game-tag">Logic</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Mini Games Gallery. Classic games, timeless fun.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
