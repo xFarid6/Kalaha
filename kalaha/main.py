@@ -1,6 +1,3 @@
-import sys
-import time
-
 # Ensure we can import modules from the same directory
 import sys
 import os

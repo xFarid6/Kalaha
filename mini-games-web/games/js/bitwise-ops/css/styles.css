@@ -1,0 +1,389 @@
+/* Bitwise Operations Interactive - Styles */
+
+:root {
+    --bg-dark: rgb(20, 15, 10);
+    --bg-medium: rgb(40, 26, 13);
+    --text-light: rgb(245, 245, 220);
+    --purple: rgb(147, 51, 234);
+    --purple-light: rgb(168, 85, 247);
+    --gold: rgb(218, 165, 32);
+    --gold-light: rgb(238, 185, 52);
+    --green: rgb(16, 185, 129);
+    --red: rgb(220, 38, 38);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
+    color: var(--text-light);
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.btn-home {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: var(--purple);
+    color: var(--text-light);
+    border: 2px solid var(--purple-light);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.btn-home:hover {
+    background: var(--purple-light);
+    transform: translateY(-2px);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-top: 2rem;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.title {
+    font-size: 3rem;
+    background: linear-gradient(135deg, var(--gold), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--purple-light);
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--purple);
+}
+
+.tab {
+    background: transparent;
+    color: var(--text-light);
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    color: var(--gold-light);
+}
+
+.tab.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Input Section */
+.input-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.input-field {
+    background: rgba(40, 26, 13, 0.8);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 2px solid var(--purple);
+}
+
+.input-field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--purple-light);
+    font-weight: 600;
+}
+
+.input-field input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.2rem;
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--text-light);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.binary-display {
+    display: block;
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    color: var(--green);
+    letter-spacing: 0.2rem;
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+}
+
+/* Operations Grid */
+.operations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.op-btn {
+    background: linear-gradient(135deg, var(--purple), var(--purple-light));
+    color: var(--text-light);
+    border: 2px solid var(--purple-light);
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.op-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.4);
+}
+
+.op-btn:active {
+    transform: translateY(0);
+}
+
+/* Visualization */
+.visualization,
+.algorithm-vis {
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 2rem;
+    min-height: 300px;
+    margin-bottom: 2rem;
+}
+
+.vis-placeholder {
+    text-align: center;
+    color: var(--purple-light);
+    font-size: 1.2rem;
+    padding: 5rem;
+}
+
+.bit-row {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.bit-label {
+    font-weight: bold;
+    color: var(--purple-light);
+    min-width: 50px;
+}
+
+.bit-box {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 2px solid var(--purple);
+    border-radius: 8px;
+    background: rgba(40, 26, 13, 0.6);
+    color: var(--text-light);
+    transition: all 0.3s ease;
+}
+
+.bit-box.active {
+    background: var(--green);
+    color: var(--bg-dark);
+    transform: scale(1.1);
+}
+
+.bit-box.result {
+    background: var(--gold);
+    color: var(--bg-dark);
+}
+
+.operation-symbol {
+    font-size: 2rem;
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* Result */
+.result {
+    background: linear-gradient(135deg, var(--purple), rgba(147, 51, 234, 0.5));
+    border: 2px solid var(--purple-light);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result.hidden,
+.code-display.hidden,
+.algorithm-steps.hidden {
+    display: none;
+}
+
+.result h3 {
+    color: var(--gold);
+    margin-bottom: 1rem;
+}
+
+.result-content {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.result-binary {
+    font-family: 'Courier New', monospace;
+    font-size: 2rem;
+    color: var(--green);
+    letter-spacing: 0.3rem;
+}
+
+.result-decimal {
+    font-size: 2rem;
+    color: var(--gold-light);
+    font-weight: bold;
+}
+
+/* Code Display */
+.code-display {
+    background: rgba(40, 26, 13, 0.9);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.code-display h3 {
+    color: var(--gold);
+    margin-bottom: 1rem;
+}
+
+.code-display pre {
+    margin: 0;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+/* Algorithm Steps */
+.algorithm-steps {
+    background: rgba(40, 26, 13, 0.9);
+    border: 2px solid var(--purple);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.algorithm-steps h3 {
+    color: var(--purple-light);
+    margin-bottom: 1rem;
+}
+
+.step {
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 4px solid var(--purple);
+    border-radius: 6px;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+    border-left-color: var(--gold);
+    background: rgba(218, 165, 32, 0.1);
+}
+
+.step-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+
+.step-btn {
+    background: var(--purple);
+    color: var(--text-light);
+    border: 2px solid var(--purple-light);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.step-btn:hover:not(:disabled) {
+    background: var(--purple-light);
+}
+
+.step-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+#step-counter {
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .title {
+        font-size: 2rem;
+    }
+
+    .operations-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .bit-box {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+}

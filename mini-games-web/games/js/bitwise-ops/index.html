@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive Bitwise Operations - Learn binary operations visually">
+    <title>Bitwise Operations Interactive</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Prism.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+
+<body>
+    <button class="btn-home" onclick="location.href='../../../index.html'">← Back to Home</button>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Bitwise Operations Interactive</h1>
+            <p class="subtitle">Learn Binary Operations Through Visualization</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab active" data-tab="bitwise">Bitwise Operations</button>
+            <button class="tab" data-tab="arithmetic">Binary Arithmetic</button>
+        </div>
+
+        <!-- Bitwise Operations Tab -->
+        <div id="bitwise-tab" class="tab-content active">
+            <div class="section">
+                <h2>Bitwise Operations</h2>
+
+                <div class="input-group">
+                    <div class="input-field">
+                        <label>Number A (decimal):</label>
+                        <input type="number" id="input-a" value="12" min="0" max="255">
+                        <span class="binary-display" id="binary-a">00001100</span>
+                    </div>
+
+                    <div class="input-field">
+                        <label>Number B (decimal):</label>
+                        <input type="number" id="input-b" value="10" min="0" max="255">
+                        <span class="binary-display" id="binary-b">00001010</span>
+                    </div>
+                </div>
+
+                <div class="operations-grid">
+                    <button class="op-btn" data-op="and">AND (&)</button>
+                    <button class="op-btn" data-op="or">OR (|)</button>
+                    <button class="op-btn" data-op="xor">XOR (^)</button>
+                    <button class="op-btn" data-op="not">NOT (~)</button>
+                    <button class="op-btn" data-op="lshift">Left Shift (<<)< /button>
+                            <button class="op-btn" data-op="rshift">Right Shift (>>)</button>
+                </div>
+
+                <!-- Visualization Area -->
+                <div id="visualization" class="visualization">
+                    <div class="vis-placeholder">
+                        Select an operation to see the visualization
+                    </div>
+                </div>
+
+                <!-- Result Display -->
+                <div id="result" class="result hidden">
+                    <h3>Result</h3>
+                    <div class="result-content">
+                        <span class="result-binary"></span>
+                        <span class="result-decimal"></span>
+                    </div>
+                </div>
+
+                <!-- Code Display -->
+                <div id="code-display" class="code-display hidden">
+                    <h3>JavaScript Code</h3>
+                    <pre><code class="language-javascript" id="code-content"></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Binary Arithmetic Tab -->
+        <div id="arithmetic-tab" class="tab-content">
+            <div class="section">
+                <h2>Binary Arithmetic</h2>
+
+                <div class="input-group">
+                    <div class="input-field">
+                        <label>Number A (decimal):</label>
+                        <input type="number" id="arith-a" value="13" min="0" max="127">
+                        <span class="binary-display" id="arith-binary-a">00001101</span>
+                    </div>
+
+                    <div class="input-field">
+                        <label>Number B (decimal):</label>
+                        <input type="number" id="arith-b" value="7" min="0" max="127">
+                        <span class="binary-display" id="arith-binary-b">00000111</span>
+                    </div>
+                </div>
+
+                <div class="operations-grid">
+                    <button class="op-btn" data-op="add">Addition (+)</button>
+                    <button class="op-btn" data-op="sub">Subtraction (-)</button>
+                    <button class="op-btn" data-op="mul">Multiplication (×)</button>
+                    <button class="op-btn" data-op="div">Division (÷)</button>
+                </div>
+
+                <!-- Algorithm Visualization -->
+                <div id="algorithm-vis" class="algorithm-vis">
+                    <div class="vis-placeholder">
+                        Select an operation to see the algorithm
+                    </div>
+                </div>
+
+                <!-- Algorithm Steps -->
+                <div id="algorithm-steps" class="algorithm-steps hidden">
+                    <h3>Algorithm Steps</h3>
+                    <div id="steps-content"></div>
+                    <div class="step-controls">
+                        <button id="prev-step" class="step-btn">← Previous</button>
+                        <span id="step-counter"></span>
+                        <button id="next-step" class="step-btn">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Code Display for Arithmetic -->
+                <div id="arith-code-display" class="code-display hidden">
+                    <h3>Binary Arithmetic Algorithm</h3>
+                    <pre><code class="language-javascript" id="arith-code-content"></code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
