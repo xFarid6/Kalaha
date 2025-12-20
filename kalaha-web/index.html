@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kalaha (Mancala) - Play against AI in your browser">
+    <title>Kalaha - Mancala Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen">
+        <div class="title-container">
+            <h1 class="game-title">KALAHA</h1>
+            <p class="subtitle">Ancient Strategy • Modern AI</p>
+            <div class="menu-buttons">
+                <button id="btn-play" class="btn btn-primary">Play Game</button>
+                <button id="btn-how-to-play" class="btn btn-secondary">How to Play</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen hidden">
+        <div class="settings-container">
+            <h2>Game Settings</h2>
+
+            <div class="setting-group">
+                <label>Opponent</label>
+                <div class="button-group">
+                    <button class="btn-option active" data-setting="opponent" data-value="human">Human</button>
+                    <button class="btn-option" data-setting="opponent" data-value="ai">AI</button>
+                </div>
+            </div>
+
+            <div class="setting-group" id="ai-difficulty-group" style="display: none;">
+                <label>AI Difficulty</label>
+                <div class="button-group vertical">
+                    <button class="btn-option" data-setting="difficulty" data-value="easy">Easy</button>
+                    <button class="btn-option active" data-setting="difficulty" data-value="medium">Medium</button>
+                    <button class="btn-option" data-setting="difficulty" data-value="hard">Hard</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Animation Speed</label>
+                <input type="range" id="anim-speed" min="100" max="1000" value="300" step="100">
+                <span id="anim-speed-label">300ms</span>
+            </div>
+
+            <div class="menu-buttons">
+                <button id="btn-start-game" class="btn btn-primary">Start Game</button>
+                <button id="btn-back-to-title" class="btn btn-secondary">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="player-info" id="player-1-info">
+                <span class="player-name">Player 1</span>
+                <span class="player-indicator" id="p1-indicator">●</span>
+            </div>
+            <button id="btn-menu" class="btn btn-small">Menu</button>
+            <div class="player-info" id="player-2-info">
+                <span class="player-indicator" id="p2-indicator">○</span>
+                <span class="player-name">Player 2</span>
+            </div>
+        </div>
+
+        <!-- Game Board Canvas -->
+        <div class="board-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="game-status" id="game-status">
+                <span id="status-text">Player 1's Turn</span>
+            </div>
+            <div class="game-controls">
+                <button id="btn-undo" class="btn btn-control" disabled>↶ Undo</button>
+                <button id="btn-hint" class="btn btn-control">💡 Hint</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 id="winner-text">Player 1 Wins!</h2>
+            <div class="final-scores">
+                <div class="score-item">
+                    <span>Player 1</span>
+                    <span id="final-score-p1" class="score">24</span>
+                </div>
+                <div class="score-item">
+                    <span>Player 2</span>
+                    <span id="final-score-p2" class="score">24</span>
+                </div>
+            </div>
+            <div class="menu-buttons">
+                <button id="btn-play-again" class="btn btn-primary">Play Again</button>
+                <button id="btn-back-to-menu" class="btn btn-secondary">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Play Overlay -->
+    <div id="how-to-play-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2>How to Play Kalaha</h2>
+            <div class="rules-content">
+                <h3>Objective</h3>
+                <p>Collect more seeds in your store than your opponent.</p>
+
+                <h3>Gameplay</h3>
+                <ul>
+                    <li>Pick a pit on your side and distribute seeds counterclockwise</li>
+                    <li>Skip your opponent's store when sowing</li>
+                    <li>Landing in your store grants an extra turn</li>
+                    <li>Landing in an empty pit on your side captures opposite seeds</li>
+                </ul>
+
+                <h3>Winning</h3>
+                <p>Game ends when one side is empty. Collect remaining seeds and count!</p>
+            </div>
+            <button id="btn-close-rules" class="btn btn-primary">Got It!</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- TensorFlow.js for NN model loading -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+
+    <script type="module" src="js/game_logic.js"></script>
+    <script type="module" src="js/ai_engine.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

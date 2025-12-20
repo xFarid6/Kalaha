@@ -1,0 +1,20 @@
+{
+    "name": "kalaha-web",
+    "version": "1.0.0",
+    "description": "Kalaha (Mancala) web implementation with AI",
+    "type": "module",
+    "scripts": {
+        "test": "node js/game_logic.test.js",
+        "dev": "python -m http.server 8000",
+        "build": "echo 'No build step required for pure JS'"
+    },
+    "keywords": [
+        "kalaha",
+        "mancala",
+        "game",
+        "ai",
+        "machine-learning"
+    ],
+    "author": "",
+    "license": "MIT"
+}
