@@ -1,6 +1,9 @@
 from collections import deque
 
 def bfs(graph, start):
+    """
+    The idea of BFS is to explore all the neighbors of a node before moving on to the neighbors of its neighbors.
+    """
     visited = set()
     queue = deque([start])
     visited.add(start)

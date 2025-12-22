@@ -1,4 +1,8 @@
 def counting_sort(arr, exp):
+    """
+    The idea of counting sort is to count the number of occurrences of each element in the array.
+    Then, we can use this count to determine the position of each element in the sorted array.
+    """
     n = len(arr)
     output = [0] * n
     count = [0] * 10
@@ -19,6 +23,9 @@ def counting_sort(arr, exp):
         arr[i] = output[i]
 
 def radix_sort(arr):
+    """
+    The idea of radix sort is to sort the array by each digit, starting from the least significant digit.
+    """
     if not arr: return []
     max1 = max(arr)
     exp = 1

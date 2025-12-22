@@ -1,5 +1,12 @@
 import heapq
 
+"""
+Dijkstra's algorithm is a greedy algorithm that finds the shortest path from a source node to all other nodes in a graph.
+It does this by maintaining a **priority queue** of nodes to visit and their current shortest distance from the source.
+It then **visits the node with the smallest distance**, updates the distances of its neighbors, and adds them to the queue.
+This process is repeated until all nodes are visited.
+"""
+
 def dijkstra(graph, start):
     # graph: {node: [(neighbor, weight), ...]}
     pq = [(0, start)]

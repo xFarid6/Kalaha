@@ -1,4 +1,10 @@
 def selection_sort(arr):
+    """
+    The idea of selection sort is to divide the input into a sorted and an unsorted region.
+    The sorted region starts empty and the unsorted region starts with the entire array.
+    In each iteration, the algorithm finds the minimum element in the unsorted region and swaps it with the first element of the unsorted region.
+    This process is repeated until the unsorted region is empty, resulting in a sorted array.
+    """
     n = len(arr)
     for i in range(n):
         min_idx = i

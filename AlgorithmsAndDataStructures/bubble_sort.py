@@ -1,4 +1,7 @@
 def bubble_sort(arr):
+    """
+    The idea of bubble sort is to compare each pair of adjacent items and swap them if they are in the wrong order.
+    """
     n = len(arr)
     for i in range(n):
         swapped = False

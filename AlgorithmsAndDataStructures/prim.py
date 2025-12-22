@@ -1,5 +1,12 @@
 import heapq
 
+"""
+Prims is a greedy algorithm that finds the minimum spanning tree (MST) of a graph.
+It does this by starting at a random node and adding the smallest edge to the tree.
+It then adds the smallest edge to the tree that connects a node in the tree to a node not in the tree.
+This process is repeated until all nodes are in the tree.
+"""
+
 def prim_mst(graph, start_node):
     # graph: {node: [(neighbor, weight), ...]}
     mst_cost = 0

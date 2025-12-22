@@ -1,14 +1,33 @@
+"""
+Kruskal's algorithm is a greedy algorithm that finds the minimum spanning tree (MST) of a graph.
+It does this by sorting the edges by weight and adding the edges to the MST one by one.
+"""
+
 class UnionFind:
+    """
+    Union-Find data structure for efficient union and find operations.
+    It is used to detect cycles in the graph.
+    Works by maintaining a forest of trees, where each tree is a set of nodes.
+    Each node points to its parent, and the root of the tree is the parent of itself.
+    """
     def __init__(self, elements):
         self.parent = {e: e for e in elements}
         self.rank = {e: 0 for e in elements}
 
     def find(self, i):
+        """
+        Find the root of the tree containing element i.
+        Uses path compression to flatten the structure.
+        """
         if self.parent[i] != i:
             self.parent[i] = self.find(self.parent[i]) # Path compression
         return self.parent[i]
 
     def union(self, i, j):
+        """
+        Union the trees containing elements i and j.
+        Uses union by rank to keep the tree shallow.
+        """
         root_i = self.find(i)
         root_j = self.find(j)
 
