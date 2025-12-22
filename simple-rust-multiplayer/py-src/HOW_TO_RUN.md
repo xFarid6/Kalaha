@@ -1,0 +1,41 @@
+# Istruzioni per il Test del Multiplayer Locale
+
+Questo progetto permette di testare la connessione peer-to-peer (UDP Hole Punching) simulata in locale su un unico PC oppure tra PC diversi attraverso un Meet Server.
+
+## Come avviare il test su un singolo PC
+
+Apri **3 terminali diversi** nella cartella principale del progetto:
+
+### 1. Avvia il Meet Server (Terminale 1)
+È il server che mette in contatto i due giocatori.
+```bash
+python simple-rust-multiplayer/py-src/server.py
+```
+
+### 2. Avvia il primo Giocatore (Terminale 2)
+Usa il flag `--local` per indicare di connettersi a localhost.
+```bash
+python simple-rust-multiplayer/py-src/main.py --local
+```
+- Una volta aperto, premi il tasto **`S`** (Server/Host).
+- Premi **`INVIO`** per confermare e iniziare ad attendere l'altro giocatore.
+
+### 3. Avvia il secondo Giocatore (Terminale 3)
+```bash
+python simple-rust-multiplayer/py-src/main.py --local
+```
+- Una volta aperto, premi il tasto **`C`** (Client/Guest).
+- Premi **`INVIO`** per confermare.
+
+---
+
+## Controlli e Logica di gioco
+- **Movimento**: Usa le frecce direzionali (**SU, GIÙ, SINISTRA, DESTRA**).
+- **Rettangolo Verde**: Rappresenta la tua posizione locale.
+- **Rettangolo Rosso**: Rappresenta la posizione del tuo avversario (ricevuta via rete).
+- **Console**: Entrambi i terminali dei giocatori mostreranno log come:
+  - `Inviata posizione al peer: x,y`
+  - `Ricevuta posizione dal peer: x,y`
+
+## Visualizzazione
+I rettangoli sono stati ingranditi (100x100 pixel) per facilitare la verifica dei movimenti. Se vedi il rettangolo rosso muoversi quando sposti il verde nell'altra finestra, il sistema sta scambiando i dati correttamente.
