@@ -4,6 +4,13 @@ from gui import GUI, AppState
 from constants import WINDOW_SIZE, TICK_RATE
 
 async def main():
+    # Controllo aggiornamenti all'avvio
+    try:
+        from updater import run_updater
+        await run_updater()
+    except (ImportError, Exception) as e:
+        print(f"[Main] Salto controllo aggiornamenti: {e}")
+
     pygame.init()
     screen = pygame.display.set_mode(WINDOW_SIZE)
     clock = pygame.time.Clock()
