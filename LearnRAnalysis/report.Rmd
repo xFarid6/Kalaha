@@ -1,0 +1,44 @@
+---
+title: "Quarterly Sales Report"
+author: "LearnRAnalysis Bot"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Executive Summary
+
+This report analyzes the sales performance of **Widgets A, B, and C** across different regions.
+
+## Data Loading
+
+We load the cleaned dataset prepared by our validaton pipeline.
+
+```{r load_data}
+df <- read_csv("data/clean_sales.csv", show_col_types = FALSE)
+glimpse(df)
+```
+
+## Sales Performance
+
+We observed the following trends in our sales data:
+
+```{r sales_plot, echo=FALSE}
+# We can run code directly inside the report
+df |> 
+  group_by(Region) |> 
+  summarise(Sales = sum(Sales)) |> 
+  ggplot(aes(x = Region, y = Sales, fill = Region)) +
+  geom_col() +
+  labs(title = "Sales by Region") +
+  theme_minimal()
+```
+
+## Conclusion
+
+*   **Widget C** appears to be our best performer in the North region.
+*   **Widget B** has consistent sales in the West.

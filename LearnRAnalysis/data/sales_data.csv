@@ -1,0 +1,16 @@
+Date,Product,Region,Sales,Units
+2023-01-01,Widget A,North,100,10
+2023-01-02,Widget B,South,150,15
+2023-01-03,Widget A,East,120,12
+2023-01-04,Widget C,West,200,8
+2023-01-05,Widget A,North,110,11
+2023-01-06,Widget B,North,160,16
+2023-01-07,Widget C,South,210,9
+2023-01-08,Widget A,East,130,13
+2023-01-09,,West,50,5
+2023-01-10,Widget B,South,155,15
+2023-01-11,Widget A,North,105,10
+2023-01-12,Widget C,East,220,10
+2023-01-13,Widget B,West,165,16
+2023-01-15,Widget A,South,125,12
+2023-01-16,Widget C,North,230,11
